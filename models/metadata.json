@@ -1,0 +1,31 @@
+{
+  "model_type": "Ridge",
+  "alpha": 10.0,
+  "selected_in": "D3 (reports/d3_model_evaluation... see docs/d3_model_evaluation.md)",
+  "cv_mean_mae_from_d3": "see docs/d3_model_evaluation.md (~9.96)",
+  "features": {
+    "categorical": [
+      "brand_group",
+      "item_group",
+      "product_type",
+      "material_group",
+      "age_band"
+    ],
+    "numeric": [
+      "condition_rank",
+      "log_retail_price",
+      "n_extras",
+      "age_censored",
+      "has_dust_bag",
+      "has_strap",
+      "has_auth_card",
+      "has_box"
+    ]
+  },
+  "target": "asking_price_ratio",
+  "trained_on": "data/clean/train_val.csv (1,843 rows; test_holdout.csv never used)",
+  "trained_at_utc": "2026-10-28T18:45:51+00:00",
+  "sklearn_version": "1.9.1",
+  "git_commit": "170764f",
+  "training_rows": 1843
+}

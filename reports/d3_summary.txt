@@ -1,0 +1,10 @@
+Selected Ridge alpha: 10.0
+Selected model: ridge
+
+5-fold CV summary (mean +/- std):
+                           mae           rmse            r2       
+                          mean    std    mean    std   mean    std
+model                                                             
+baseline_brand_median   12.000  0.521  14.877  0.550 -0.024  0.031
+hist_gradient_boosting  10.337  0.405  12.782  0.406  0.239  0.101
+ridge                    9.962  0.446  12.174  0.429  0.310  0.087

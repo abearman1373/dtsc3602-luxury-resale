@@ -14,4 +14,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "modal>=1.0",
     "xlsxwriter>=3.2",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic>=2.8",
+    "joblib>=1.4",
 ]
