@@ -1,0 +1,12 @@
+Raw listings: 25,000
+Duplicate listing_id: 0
+SouthPark-brand listings: 15,888
+  with estimated retail price (labeled): 2,317
+  labeled rows that are dropship-partner listings: 2,317
+  non-partner rows with a retail price: 0
+Dropped: ratio below 5.0% (implausible retail price): 1
+Dropped: condition 'Outlet' (not a wear grade): 12
+Modeling rows after cleaning: 2,304
+Distinct brand+model groups: 1,194
+Train/validation rows: 1,843
+Reserved test rows: 461
