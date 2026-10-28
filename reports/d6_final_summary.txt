@@ -1,0 +1,8 @@
+Test holdout: 461 rows, opened for the first time in this script.
+D3 CV MAE (train_val, 5-fold): 9.96
+D6 final test MAE (ridge_final): 10.99
+Gap (test - CV): +1.03
+
+                model   n    mae   rmse     r2
+baseline_brand_median 461 13.021 16.030 -0.066
+          ridge_final 461 10.988 13.495  0.245

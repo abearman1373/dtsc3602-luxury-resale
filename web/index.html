@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resale Ratio Estimator — SouthPark Mall / Rebag</title>
+<style>
+  :root {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --page: #f9f9f7; --surface: #ffffff;
+    --blue: #2a78d6; --blue-dark: #1c5cab; --aqua: #1baf7a; --red: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --page: #0d0d0d; --surface: #1a1a19;
+      --blue: #3987e5; --blue-dark: #2a78d6; --aqua: #199e70; --red: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .hero {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 55%, var(--aqua) 130%);
+    border-radius: 16px; padding: 26px 28px; color: #fff; margin-bottom: 20px;
+    box-shadow: 0 6px 24px rgba(28,92,171,0.25);
+  }
+  .hero h1 { margin: 0 0 6px; font-size: 1.5rem; }
+  .hero p { margin: 0; opacity: .92; font-size: .9rem; max-width: 62ch; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 1.1rem; }
+  .card .sub { color: var(--ink2); font-size: .85rem; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 16px; }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+  label { display: block; font-size: .8rem; color: var(--ink2); margin-bottom: 4px; }
+  select, input[type=number] {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--axis); border-radius: 8px;
+    background: var(--surface); color: var(--ink); font-size: .9rem;
+  }
+  select:focus, input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 4px; }
+  .checks label { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--ink); margin: 0; }
+  button#go {
+    margin-top: 18px; width: 100%; padding: 12px; border: none; border-radius: 10px;
+    background: var(--blue); color: #fff; font-size: .95rem; font-weight: 600; cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  button#go:hover { background: var(--blue-dark); }
+  button#go:active { transform: translateY(1px); }
+  button#go:disabled { opacity: .6; cursor: default; }
+  #result { margin-top: 16px; }
+  .state { padding: 14px 16px; border-radius: 10px; font-size: .88rem; }
+  .state.loading { background: var(--grid); color: var(--ink2); }
+  .state.error { background: color-mix(in srgb, var(--red) 12%, var(--surface)); color: var(--red); border: 1px solid var(--red); }
+  .pill {
+    display: inline-block; background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+    color: var(--blue); border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: .8rem;
+  }
+  .headline { font-size: 2.2rem; font-weight: 700; margin: 10px 0 2px; }
+  .headline small { font-size: 1rem; font-weight: 400; color: var(--ink2); }
+  .foot { color: var(--muted); font-size: .78rem; margin-top: 22px; text-align: center; }
+  .foot a { color: var(--ink2); }
+  code { background: var(--grid); padding: 1px 5px; border-radius: 4px; font-size: .82em; }
+  .spin {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--axis);
+    border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: -2px; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>💎 Resale Ratio Estimator</h1>
+    <p>Predicts the asking price as a % of estimated retail for a SouthPark Mall brand listing on Rebag,
+       using the Ridge regression pipeline from the DTSC 3602 project (D4). Live call to the deployed
+       FastAPI model on Modal — not a lookup table.</p>
+  </div>
+
+  <div class="card">
+    <h2>Describe the item</h2>
+    <p class="sub">Required fields are marked *. Everything else has a sensible default.</p>
+    <form id="form">
+      <div class="grid">
+        <div>
+          <label for="brand_group">Brand *</label>
+          <select id="brand_group" required>
+            <option>Louis Vuitton</option><option>Gucci</option><option>Chanel</option>
+            <option>Saint Laurent</option><option>Balenciaga</option><option>Tiffany & Co.</option>
+            <option>Burberry</option><option>Other SouthPark</option>
+          </select>
+        </div>
+        <div>
+          <label for="item_group">Item group *</label>
+          <select id="item_group" required>
+            <option>Handbag</option><option>Accessory</option><option>Jewelry & Watch</option><option>Shoes</option>
+          </select>
+        </div>
+        <div>
+          <label for="product_type">Product type *</label>
+          <input id="product_type" type="text" value="Totes" required maxlength="60"
+                 placeholder="e.g. Totes, Wallets, Shoulder bags">
+        </div>
+        <div>
+          <label for="material_group">Material</label>
+          <select id="material_group">
+            <option>Leather</option><option>Canvas Coated</option><option>Patent Leather</option>
+            <option>Canvas Plain</option><option selected>Unknown</option><option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="condition">Condition *</label>
+          <select id="condition" required>
+            <option>Fair</option><option>Good</option><option selected>Very Good</option>
+            <option>Great</option><option>Excellent</option><option>Pristine</option>
+          </select>
+        </div>
+        <div>
+          <label for="age_band">Age</label>
+          <select id="age_band">
+            <option selected>Not available</option><option>0-5</option><option>6-10</option>
+            <option>11-20</option><option>21+</option>
+          </select>
+        </div>
+        <div>
+          <label for="estimated_retail_price">Estimated retail price ($) *</label>
+          <input id="estimated_retail_price" type="number" min="1" max="200000" step="1" value="2200" required>
+        </div>
+        <div>
+          <label for="n_extras">Extras included</label>
+          <input id="n_extras" type="number" min="0" max="10" step="1" value="2">
+        </div>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="has_dust_bag" checked> Dust bag</label>
+        <label><input type="checkbox" id="has_strap"> Strap</label>
+        <label><input type="checkbox" id="has_auth_card" checked> Authenticity card</label>
+        <label><input type="checkbox" id="has_box"> Box</label>
+        <label><input type="checkbox" id="age_censored"> Microchipped (age censored)</label>
+      </div>
+      <button id="go" type="submit">Estimate asking-price ratio</button>
+    </form>
+    <div id="result"></div>
+  </div>
+
+  <p class="foot">
+    Calls the live Modal API at <code id="api-host"></code> — not completed sales, an advertised-listing
+    estimate only. DTSC 3602 group project, D5.
+  </p>
+</div>
+
+<script>
+  // Point this at your deployed Modal API (set once, at deploy time).
+  const API_BASE = "https://abearman1373--luxury-resale-api-fastapi-app.us-east.modal.run";
+  document.getElementById("api-host").textContent = API_BASE.replace("https://", "");
+
+  const form = document.getElementById("form");
+  const resultEl = document.getElementById("result");
+  const goBtn = document.getElementById("go");
+
+  function val(id) { return document.getElementById(id).value; }
+  function checked(id) { return document.getElementById(id).checked; }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    goBtn.disabled = true;
+    resultEl.innerHTML = `<div class="state loading"><span class="spin"></span>Calling the live model…</div>`;
+
+    const body = {
+      brand_group: val("brand_group"),
+      item_group: val("item_group"),
+      product_type: val("product_type"),
+      material_group: val("material_group"),
+      condition: val("condition"),
+      age_band: val("age_band"),
+      age_censored: checked("age_censored"),
+      estimated_retail_price: Number(val("estimated_retail_price")),
+      n_extras: Number(val("n_extras")),
+      has_dust_bag: checked("has_dust_bag"),
+      has_strap: checked("has_strap"),
+      has_auth_card: checked("has_auth_card"),
+      has_box: checked("has_box"),
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = Array.isArray(data.detail)
+          ? data.detail.map(d => `${(d.loc || []).slice(-1)[0]}: ${d.msg}`).join("; ")
+          : (data.detail || `HTTP ${res.status}`);
+        resultEl.innerHTML = `<div class="state error">⚠️ ${res.status === 503 ? "Model temporarily unavailable" : "Invalid input"} — ${msg}</div>`;
+        return;
+      }
+
+      resultEl.innerHTML = `
+        <div class="state" style="background:transparent;padding:0;">
+          <span class="pill">model ${data.model_version}</span>
+          <div class="headline">${data.asking_price_ratio.toFixed(1)}% <small>of estimated retail</small></div>
+          <div>Ballpark asking price: <strong>$${data.estimated_asking_price.toLocaleString()}</strong></div>
+        </div>`;
+    } catch (err) {
+      resultEl.innerHTML = `<div class="state error">⚠️ Could not reach the API (${err.message}). It may be cold-starting — try again in a few seconds.</div>`;
+    } finally {
+      goBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

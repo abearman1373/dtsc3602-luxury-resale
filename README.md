@@ -99,6 +99,47 @@ uv run modal secret create supabase-dashboard SUPABASE_URL=https://<project>.sup
 uv run modal deploy dashboard/modal_app.py
 ```
 
+**Dashboard (live):** https://abearman1373--luxury-resale-dashboard-run.us-east.modal.run
+
+## D3: model evaluation
+
+Baseline (brand-median) vs. Ridge vs. HistGradientBoostingRegressor, validated on grouped/stratified CV folds built in D2. **Ridge wins** (MAE 9.96 vs. baseline 12.00, R² 0.31 vs. −0.02). Full write-up, error analysis, and limitations: [`docs/d3_model_evaluation.md`](docs/d3_model_evaluation.md).
+
+```powershell
+uv run python scripts/evaluate_models.py
+```
+
+## D4: fitted pipeline and API
+
+`scripts/transformers.py` defines a custom `RareCategoryGrouper` transformer; `scripts/train_final_pipeline.py` fits the selected Ridge pipeline on all of `train_val.csv` and saves `models/pipeline.joblib` + `models/metadata.json`. Served by FastAPI (`api/main.py`: `/health`, `/info`, `/predict` — 422 on invalid input, 503 if the artifact is unavailable) and deployed on Modal. Details and verification: [`docs/d4_pipeline_api.md`](docs/d4_pipeline_api.md).
+
+```powershell
+uv run python scripts/train_final_pipeline.py
+uv run uvicorn api.main:app --port 8000          # local
+uv run modal deploy api/modal_app.py             # deploy
+```
+
+**API (live):** https://abearman1373--luxury-resale-api-fastapi-app.us-east.modal.run ([/docs](https://abearman1373--luxury-resale-api-fastapi-app.us-east.modal.run/docs))
+
+## D5: application and tests
+
+`web/index.html` is a static frontend (deployed on Vercel) that calls the live D4 API directly from the browser, with loading and error states. `postman/dtsc3602_api.postman_collection.json` is a Postman collection with assertions (health, info, a valid prediction, two invalid-input 422 cases) — 10/10 pass against the deployed API. Details: [`docs/d5_application_tests.md`](docs/d5_application_tests.md).
+
+```powershell
+npx vercel deploy --prod web
+npx newman run postman/dtsc3602_api.postman_collection.json
+```
+
+**Frontend (live):** https://web-fawn-nine-hzedu95igg.vercel.app
+
+## D6: final report and demonstration
+
+`scripts/evaluate_final.py` evaluates the **frozen** D4 pipeline and the baseline on the reserved test holdout — opened for the first time at this step. Final test MAE: 10.99 (Ridge) vs. 13.02 (baseline). Full report — problem, methods, final results, conclusions, and bias/fallacy discussion: [`docs/d6_final_report.md`](docs/d6_final_report.md).
+
+```powershell
+uv run python scripts/evaluate_final.py
+```
+
 ## AI disclosure
 
-The data collection, cleaning, D2 preparation, plotting and dashboard code were written with Claude (Anthropic), within the course AI policy. The group reviewed and ran all code.
+Data collection, cleaning, EDA, modeling (D3), the fitted pipeline and API (D4), the frontend and tests (D5), and the final report (D6) were developed with Claude (Anthropic), within the course AI policy. The group reviewed and ran all code; see [`docs/d6_final_report.md`](docs/d6_final_report.md) for the full disclosure and per-member contribution notes.

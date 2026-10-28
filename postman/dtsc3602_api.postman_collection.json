@@ -1,0 +1,137 @@
+{
+  "info": {
+    "name": "DTSC 3602 — Luxury Resale Ratio API",
+    "description": "D5 Postman collection for the deployed FastAPI service (D4). Covers health, pipeline info, a valid prediction, and two invalid-input cases (422). Set the `base_url` collection variable to the deployed Modal URL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://abearman1373--luxury-resale-api-fastapi-app.us-east.modal.run" }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('body reports ok', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ok');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pipeline info",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/info"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('reports the Ridge model and feature list', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.model_type).to.eql('Ridge');",
+              "  pm.expect(body.features.categorical).to.include('brand_group');",
+              "  pm.expect(body.features.numeric).to.include('log_retail_price');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predict — valid request",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"brand_group\": \"Louis Vuitton\",\n  \"item_group\": \"Handbag\",\n  \"product_type\": \"Totes\",\n  \"material_group\": \"Canvas Coated\",\n  \"condition\": \"Very Good\",\n  \"age_band\": \"6-10\",\n  \"age_censored\": false,\n  \"estimated_retail_price\": 2200,\n  \"n_extras\": 2,\n  \"has_dust_bag\": true,\n  \"has_strap\": false,\n  \"has_auth_card\": true,\n  \"has_box\": false\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('returns a plausible ratio and matching dollar estimate', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.asking_price_ratio).to.be.a('number');",
+              "  pm.expect(body.asking_price_ratio).to.be.within(0, 100);",
+              "  pm.expect(body.estimated_asking_price).to.be.closeTo(2200 * body.asking_price_ratio / 100, 0.5);",
+              "  pm.expect(body.model_version).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predict — invalid brand (422)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"brand_group\": \"Not A Real Brand\",\n  \"item_group\": \"Handbag\",\n  \"product_type\": \"Totes\",\n  \"condition\": \"Good\",\n  \"estimated_retail_price\": 1000\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 422', () => pm.response.to.have.status(422));",
+              "pm.test('error names the offending field', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(JSON.stringify(body.detail)).to.include('brand_group');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predict — non-positive price (422)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"brand_group\": \"Gucci\",\n  \"item_group\": \"Handbag\",\n  \"product_type\": \"Totes\",\n  \"condition\": \"Good\",\n  \"estimated_retail_price\": -5\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 422', () => pm.response.to.have.status(422));",
+              "pm.test('error names the price field', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(JSON.stringify(body.detail)).to.include('estimated_retail_price');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

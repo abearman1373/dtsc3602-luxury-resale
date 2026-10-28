@@ -17,6 +17,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,16 @@ app = FastAPI(
     version="1.0",
     description="Predicts the asking-price-to-estimated-retail-price ratio for a SouthPark Mall "
                 "brand listing on Rebag. DTSC 3602 D4 — see /docs for schemas.",
+)
+
+# D5's Vercel frontend calls this API cross-origin. Read-only GET/POST endpoints with no
+# cookies/auth, so an open origin policy is low-risk here; tighten to the deployed Vercel
+# domain once it's fixed if this API ever serves anything sensitive.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
 )
 
 BRAND_GROUPS = ["Louis Vuitton", "Gucci", "Chanel", "Saint Laurent", "Balenciaga",
